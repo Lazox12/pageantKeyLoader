@@ -22,10 +22,3 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     target_link_libraries(pageant_keyLoader -static)
 endif()
 
-add_executable(test test.cpp)
-target_link_libraries(test
-        SQLiteCpp
-        sqlite3
-        pthread
-)
-target_link_libraries(test OpenSSL:Crypto)
