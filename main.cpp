@@ -3,24 +3,24 @@
 #include <ranges>
 #include <cstring>
 #include <fstream>
-#include <openssl/sha.h>
 #include <SQLiteCpp/SQLiteCpp.h>
+#include <sha256.h>
 
 namespace fs = std::filesystem;
 
 SQLite::Database db("../db.sqlite3",SQLite::OPEN_READWRITE);
 
-std::string hash(const std::string inputStr) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    const unsigned char* data = (const unsigned char*)inputStr.c_str();
-    SHA256(data, inputStr.size(), hash);
-    std::stringstream ss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
-    {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+std::string hash(const std::string &path) {
+    std::ifstream fs("keys/"+path+".ppk");
+    if (!fs.is_open()) {
+        throw std::runtime_error("Could not open file");
     }
-    return ss.str();
+    std::stringstream buffer;
+    buffer << fs.rdbuf();
+    fs.close();
+    return sha256(buffer.str());
 }
+
 
 int addKey(const std::string &path,const std::string& name, const bool update = true,bool load = true,const std::string &comment = "") {
     try {
@@ -36,7 +36,9 @@ int addKey(const std::string &path,const std::string& name, const bool update = 
             return 1;
         }
         fs::copy(path, "keys/"+name+".ppk", fs::copy_options::overwrite_existing);
-        db.exec("INSERT INTO keys VALUES (nullptr,'"+name+"','"+path+"',nullptr,"+(update?"1":"0")+","+(load?"1":"0")+",'"+comment+"')");
+        const std::string h = hash(name);
+        std::cout<<h<<std::endl;
+        db.exec("INSERT INTO keys VALUES (NULL,'"+name+"','"+path+"','"+h+"',"+(update?"1":"0")+","+(load?"1":"0")+",'"+comment+"')");
         return 0;
     }catch (fs::filesystem_error &e) {
         std::cout <<"error adding keys"+static_cast<std::string>(e.what())<<std::endl;
@@ -126,15 +128,73 @@ void normal() {
     SQLite::Statement query(db,"SELECT * FROM keys");
 }
 
+bool getBoolFromUser(const std::string& name)
+{
+    std::cout << name<<" (Y=1/N=0) : " << std::endl;
+
+    bool setValue;
+    if (std::cin >> setValue) return setValue;  // Boolean read correctly
+
+    // Badly formed input: failed to read a bool
+    std::cout << "Wrong value. Only 1 or 0 is accepted." << std::endl;
+    std::cin.clear();                // Clear the failed state of the stream
+    std::cin.ignore(1000000, '\n');  // Extract and discard the bad input
+
+    return getBoolFromUser(name);  // Try again
+}
+
+void user() {
+    std::cout<<"entering cli mode"<<std::endl;
+    std::cout<<"to run automaticaly run with -a"<<std::endl;
+    std::string command;
+    while (true) {
+        std::cout<<"enter command"<<std::endl<<"a : addKey"<<std::endl<<"r : removeKey"<<std::endl <<"l : loadKeys"<<std::endl<<"e : editComment"<<std::endl<<"q : quit"<<std::endl;
+        std::cin>>command;
+        if (strcmp("a",command.c_str())==0) {
+            std::string path,name;
+            bool update,load;
+            std::cout<<"enter path to the key"<<std::endl;
+            std::cin>>path;
+            std::cout<<"enter name to the key"<<std::endl;
+            std::cin>>name;
+            load = getBoolFromUser("do you whant to auto load this key on startup");
+            update = getBoolFromUser("do you whant to automaticaly update this key");
+            if (addKey(path,name,update,load,"")==0) {
+                std::cout<<"key added successfully"<<std::endl;
+            }
+        }
+        if (strcmp("r",command.c_str())==0) {
+            std::string name;
+            std::cout<<"enter name to the key"<<std::endl;
+            std::cin>>name;
+        }
+        if (strcmp("l",command.c_str())==0) {
+            std::cout<<"Loading all keys"<<std::endl;
+            load_keys("","keys");
+        }
+        if (strcmp("e",command.c_str())==0) {
+            std::string name,newComment;
+            std::cout<<"enter name of the key"<<std::endl;
+            std::cin>>name;
+            std::cout<<"enter new comment for the key"<<std::endl;
+            std::cin>>newComment;
+            editComment(name,newComment);
+        }
+        if (strcmp("q",command.c_str())==0) {
+            std::cout<<"Quitting"<<std::endl;
+            break;
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     init();
 
     if (argc>2 && strcmp(argv[1],"-a") == 0) {
         normal();
+    }else {
+        user();
     }
-    std::string pw1 = "aaaa",hashed;
-    hashed = hash(pw1);
-    std::cout<< hashed<<std::endl;
     //addKey("C:/users/tomik/.ssh/test.ppk","aaaa");
     //removeKey("aaaa");
     //editComment("aaaa.ppk","test.ppk");
