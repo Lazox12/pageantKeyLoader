@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <iomanip>
+#include <Argon2.h>
 
 #define SHA256_HASH_SIZE 32
 
@@ -125,7 +126,7 @@ class sshKey{
                 throw std::invalid_argument("invalid key macError");
             }
         }
-        void decodeData() {
+        void decodeData(const std::string& password = "") {
             this->publicKey = base64_decode(this->publicKey);
             this->privateKey = base64_decode(this->privateKey);
         }

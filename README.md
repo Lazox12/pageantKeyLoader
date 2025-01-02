@@ -24,13 +24,18 @@ pageantKeyLoader is a utility designed to automate the loading of SSH keys into 
    ```bash
    git clone https://github.com/Lazox12/pageantKeyLoader.git
    ```
-2. **Clone the SQLitecpp dependency**
+2. **Clone the dependencies**
    ````bash
    git submodule init
    git submodule update
    ````
 
-3.**Build the Application**:
+3.**install cuda framework**
+   ````
+   https://developer.nvidia.com/cuda-toolkit
+   ````
+
+4.**Build the Application**:
    ```bash
    cd pageantKeyLoader
    mkdir build

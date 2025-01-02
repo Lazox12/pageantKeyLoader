@@ -4,3 +4,6 @@
 [submodule "thirdparty/hmac_sha256"]
 	path = thirdparty/hmac_sha256
 	url = https://github.com/h5p9sl/hmac_sha256.git
+[submodule "thirdparty/argon2-cpp"]
+	path = thirdparty/argon2-cpp
+	url = http://github.com/zpalmtree/argon2-cpp.git
