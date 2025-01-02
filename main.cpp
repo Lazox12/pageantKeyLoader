@@ -6,9 +6,11 @@
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <sha256.h>
 #include <vector>
-#include <hmac_sha256.h>
+
 #include <string>
-#include <base64.h>
+
+#include "sshKey.cpp"
+
 #define pageant_process "pageant.exe"
 
 namespace fs = std::filesystem;
@@ -324,32 +326,12 @@ void user() {
 }
 
 int main(int argc, char** argv) {
-    const int prefixSize = 4;
-    const int paddedPrefixSize = prefixSize + 1;
-    const int lineLength = 64;
-    const std::string keyType = "ssh-rsa";
-    const std::string encryptionType = "none";
-    const std::string publicKey = "AAAAB3NzaC1yc2EAAAADAQABAAABAQC1NKwwI5cN0SCXfQApreLg+tZv3ScE6ni/D5jskruFFz4EhpsSrg4oJmO1W6ET+7YRftfjzpkrdnTvv2lUrFzaLAsnLMPPNGAvFCWKiMhL2UHZd790cc9NiE3/x67H1GFzKbGRrTp/8crJglMVK9xzwSqHkOtLauw46GN6J4VE3jEWrctF74kfb377cdhv2s8zrEUb0D2M+ENjeOw17CVo6yGwmu+v4gF1NsJpHXPTKVelg/nwIR/VNr4l7qgs5M9OJzN3H1R5N+HUuB79zDTlFqXdUR6LDMFFVbYZ7DO4VNzyvMQpLAh8qv4iUNP6js025ISQzRyFDHXBY4VJUMPL";
-    const std::string privateKey = "AAABAQCtFzVrfnOqJRum2SawqYNROQphLLU7AuZ4S2Peh4NMbJk3JYU34L9xJsqT0IUbW5PdPnbnCtBRLgQhh4wL7+F6HhxBPYeFhBhkoDAEFwiNO2ilXLereZN2Ej+/lnSkOYEkyqzt5LU+xi7ZMf4++PjKMbh4arv3/JjM+18armmlD6S1TvKc+DhYYUl4QufTzLBl+SaLwj7HqDT2DxYOr1rrl43Jo2qocdGSRd8x+gMbec0pD8Vxr4ALsC8ReWmQE+ixKBP83ZCaYb6TiTToneCDhV9XQ6B7m2uKtkXn6iOn/etNPxYEoStq9JV7pT6jioVce/E6JkmtUEn9m1Vrgz6BAAAAgQDpUhn9PuNhI5h7wccS2f73TgsiX41WLlG09c7y/Stvkl/b2MVad9hly+3Dx3JwxtKMhN7RAPT4JglkXKCa1WYPuO7v+XE6cVvJ1sy/unkyEaeOEqwk9LLfhbSTlrARiEW9sloeyrLqz3uqxk08SB/CbCNMtVwszix0dUi419SqoQAAAIEAxtHBLA7OPQh8T9xv5LGwSHUC4GtOSUjy2CQ4Lvbs2iOkaqJM05C5klqE0MQpH066yHdHHqO6jfx26AwW/Tte8lXS6tKCyiqX0pUkwolDz3uYf3hBxNin5K8kW9ge9kjAjXqGmjK6k+HOajvzY7XU0mE2S/nu42pQlknI4py24usAAACBAIIDtKMWAu3ZKcaSwz29WlE2KpxtDVkPNoRTKNCLNRmFrlBzeI9DVDQzgedw/soi4oIsQOSHOjgSNGfOFXT+f00Re9e8ozhX9FzArkwFn6ouj8O/WSyD+ocBqVWtU2OX4IdFNBVLG9x3pLa/aAIG+gf7h05fDthb00/GsU5U5TKO";
-    const std::string comment = "rsa-key-20241230";
-    const std::string publicBuffer =  base64_encode(publicKey);
-    const std::string privateBuffer =  base64_encode(privateKey);
-    const std::byte *bytesToHash = new std::byte[prefixSize + keyType.size() + prefixSize + encryptionType.size() + prefixSize
-                                           +
-                                           comment.size() +
-                                           prefixSize + publicBuffer.size() + prefixSize + privateBuffer.size()];
-    std::stringstream ss_result;
-    std::vector<uint8_t> out((256 / 8));
-    hmac_sha256(new std::byte[0], 1, bytesToHash, sizeof(bytesToHash),
-             out.data(), out.size());
+    std::ifstream ifs("../test.ppk");
+    sshKey key;
+    key.parseKey(ifs);
+    key.decodeData();
+    key.generateMac();
 
-
-    for (uint8_t x : out) {
-        ss_result << std::hex << std::setfill('0') << std::setw(2) << (int)x;
-    }
-
-    // Print out the result
-    std::cout << "HMAC: " << ss_result.str() << std::endl;
 
     return 0;
     init();
